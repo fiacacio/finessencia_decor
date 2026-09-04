@@ -71,13 +71,16 @@
 .hero-copy .primary::after { position:absolute; z-index:0; inset:5px; border:1px solid #faf6f0c7; content:''; opacity:0; pointer-events:none; transform:scale(.94); transition:opacity .25s ease,transform .35s cubic-bezier(.2,.8,.25,1); }
 .hero-copy .primary:hover { background:#b96c35; box-shadow:0 7px 16px #a75e2b26; }
 .hero-copy .primary:hover::after { opacity:.7; transform:scale(1); }
+.hero-copy .primary>span { position:relative; z-index:1; transition:transform .28s cubic-bezier(.2,.8,.25,1); }
+.hero-copy .primary:hover>span { transform:scale(1.08); }
 .hero-copy .primary:active { background:#985027; box-shadow:none; transform:scale(.975); }
 .hero-copy .primary:active::after { opacity:.85; transform:scale(.97); }
 @media (prefers-reduced-motion:reduce) { .hero-copy .primary,.hero-copy .primary::after { transition:none; } }
 
 /* O título permanece sóbrio e recebe, de tempos em tempos, uma luz lateral quente. */
-.hero-copy h1 { background:linear-gradient(45deg,var(--marrom) 0 42%,#e4c28d 46%,var(--caramelo) 50%,#e4c28d 54%,var(--marrom) 58% 100%); background-position:0% 50%; background-size:500% 400%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:hero-title-gradient 32s cubic-bezier(.4,0,.2,1) infinite; }
-@keyframes hero-title-gradient { 0%,52% { background-position:0% 0%; } 92%,100% { background-position:100% 100%; } }
+.hero-copy h1 { background:linear-gradient(45deg,var(--marrom) 0 42%,#e4c28d 46%,var(--caramelo) 50%,#e4c28d 54%,var(--marrom) 58% 100%); background-position:0% 0%; background-size:500% 400%; -webkit-background-clip:text; background-clip:text; color:transparent; }
+.hero-copy h1.is-spraying { animation:hero-title-gradient 3s cubic-bezier(.4,0,.2,1) both; }
+@keyframes hero-title-gradient { from { background-position:0% 0%; } to { background-position:100% 100%; } }
 @media (prefers-reduced-motion:reduce) { .hero-copy h1 { animation:none; } }
 @media (max-width:700px) { .hero-copy .eyebrow { margin-bottom:18px; font-size:9px; }.hero-copy h1 { font-size:55px; }.hero-copy > p:not(.eyebrow) { font-size:10px; }.hero-copy .button { min-width:172px; height:45px; font-size:9px; } }
 
