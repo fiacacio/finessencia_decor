@@ -32,6 +32,18 @@ insert into public.essences (name)
 select distinct trim(essence) from public.products where essence is not null and trim(essence) <> ''
 on conflict (name) do nothing;
 
+insert into public.essences (name) values
+  ('Alecrim'),
+  ('Capim Limão'),
+  ('Flor de Figo'),
+  ('Laranjeira'),
+  ('Lavanda'),
+  ('Cereja e Avelã'),
+  ('Daslu'),
+  ('Limão Siciliano'),
+  ('Maçã com Canela')
+on conflict (name) do nothing;
+
 alter table public.categories enable row level security;
 alter table public.essences enable row level security;
 
