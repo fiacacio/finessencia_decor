@@ -9,8 +9,8 @@ import { createProduct, deleteProduct, getProducts, removeProductImage, updatePr
 const emptyProduct: ProductInput = { name: '', description: '', price: 0, category: '', essence: '', detail: '', active: true, imageUrl: null }
 
 const inputClass = 'admin-input'
-const isAdmin = (claims: Record<string, unknown> | undefined) =>
-  (claims?.app_metadata as Record<string, unknown> | undefined)?.role === 'admin'
+const isAdmin = (appMetadata: Record<string, unknown> | undefined) =>
+  appMetadata?.role === 'admin'
 
 export function AdminDashboard() {
   const [ready, setReady] = useState(false)
