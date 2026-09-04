@@ -1,125 +1,42 @@
 'use client'
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
-import { Check, ImagePlus, LoaderCircle, LogOut, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { FolderTree, ImagePlus, LoaderCircle, LogOut, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
 import { createSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 import { formatPrice, type Product, type ProductInput } from '@/lib/products'
-import { createProduct, deleteProduct, getProducts, removeProductImage, updateProduct, uploadProductImage } from '@/services/products'
+import { createProduct, deleteProduct, getProducts, updateProduct, uploadProductImage } from '@/services/products'
+import { createTaxonomy, deleteTaxonomy, getTaxonomies, type Taxonomy, updateTaxonomy } from '@/services/taxonomies'
 
-const emptyProduct: ProductInput = { name: '', description: '', price: 0, category: '', essence: '', detail: '', active: true, imageUrl: null }
-
-const inputClass = 'admin-input'
-const isAdmin = (appMetadata: Record<string, unknown> | undefined) =>
-  appMetadata?.role === 'admin'
+type View = 'products' | 'categories' | 'essences'
+type TaxonomyKind = 'categories' | 'essences'
+const blank: ProductInput = { name: '', description: '', price: 0, category: '', essence: '', detail: '', active: true, imageUrl: null }
+const isAdmin = (metadata: Record<string, unknown> | undefined) => metadata?.role === 'admin'
 
 export function AdminDashboard() {
-  const [ready, setReady] = useState(false)
-  const [authenticated, setAuthenticated] = useState(false)
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<Product | null>(null)
-  const [form, setForm] = useState<ProductInput>(emptyProduct)
-  const [query, setQuery] = useState('')
-  const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all')
-  const [category, setCategory] = useState('all')
-  const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<Product | null>(null)
-  const [login, setLogin] = useState({ email: '', password: '' })
-
-  const notify = (message: string, error = false) => {
-    setToast({ message, error })
-    window.setTimeout(() => setToast(null), 4200)
-  }
-
-  const loadProducts = async () => {
-    setLoading(true)
-    try { setProducts(await getProducts()) } catch (error) { notify(error instanceof Error ? error.message : 'Não foi possível carregar os produtos.', true) } finally { setLoading(false) }
-  }
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) { setReady(true); return }
-    const supabase = createSupabaseClient()
-    supabase.auth.getUser().then(({ data }) => {
-      const allowed = Boolean(data.user && isAdmin(data.user.app_metadata))
-      setAuthenticated(allowed)
-      setReady(true)
-      if (allowed) void loadProducts()
-    })
-  }, [])
-
-  const categories = useMemo(() => [...new Set(products.map((product) => product.category).filter(Boolean) as string[])].sort(), [products])
-  const filtered = useMemo(() => products.filter((product) => {
-    const haystack = `${product.name} ${product.category ?? ''} ${product.essence ?? ''}`.toLocaleLowerCase('pt-BR')
-    return haystack.includes(query.toLocaleLowerCase('pt-BR')) && (status === 'all' || (status === 'active') === product.active) && (category === 'all' || product.category === category)
-  }), [products, query, status, category])
-
-  const openCreate = () => { setEditing(null); setForm(emptyProduct); setFormOpen(true) }
-  const openEdit = (product: Product) => { setEditing(product); setForm({ name: product.name, description: product.description ?? '', price: product.price, category: product.category ?? '', essence: product.essence ?? '', detail: product.detail ?? '', active: product.active, imageUrl: product.imageUrl }); setFormOpen(true) }
-
-  const handleLogin = async (event: FormEvent) => {
-    event.preventDefault()
-    setSaving(true)
-    try {
-      const { data, error } = await createSupabaseClient().auth.signInWithPassword(login)
-      if (error) throw error
-      if (!isAdmin(data.user?.app_metadata)) { await createSupabaseClient().auth.signOut(); throw new Error('Esta conta não tem acesso administrativo.') }
-      setAuthenticated(true); await loadProducts()
-    } catch (error) { notify(error instanceof Error ? error.message : 'Não foi possível entrar.', true) } finally { setSaving(false) }
-  }
-
-  const handleImage = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return notify('Selecione uma imagem JPG, PNG ou WEBP.', true)
-    if (file.size > 5 * 1024 * 1024) return notify('A imagem deve ter no máximo 5 MB.', true)
-    setSaving(true)
-    try {
-      const imageUrl = await uploadProductImage(file)
-      setForm((current) => ({ ...current, imageUrl }))
-      notify('Imagem enviada com sucesso.')
-    } catch (error) { notify(error instanceof Error ? error.message : 'Falha no upload da imagem.', true) } finally { setSaving(false) }
-  }
-
-  const handleSave = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!form.name.trim() || Number.isNaN(form.price) || form.price < 0) return notify('Informe nome e preço válidos.', true)
-    setSaving(true)
-    try {
-      const saved = editing ? await updateProduct(editing.id, form) : await createProduct(form)
-      if (editing?.imageUrl && editing.imageUrl !== saved.imageUrl) await removeProductImage(editing.imageUrl)
-      setProducts((current) => editing ? current.map((product) => product.id === saved.id ? saved : product) : [saved, ...current])
-      setFormOpen(false); notify(editing ? 'Produto atualizado com sucesso.' : 'Produto criado com sucesso.')
-    } catch (error) { notify(error instanceof Error ? error.message : 'Erro ao salvar o produto.', true) } finally { setSaving(false) }
-  }
-
-  const toggleStatus = async (product: Product) => {
-    try {
-      const saved = await updateProduct(product.id, { name: product.name, description: product.description ?? '', price: product.price, category: product.category ?? '', essence: product.essence ?? '', detail: product.detail ?? '', imageUrl: product.imageUrl, active: !product.active })
-      setProducts((current) => current.map((item) => item.id === saved.id ? saved : item)); notify(saved.active ? 'Produto ativado.' : 'Produto desativado.')
-    } catch (error) { notify(error instanceof Error ? error.message : 'Não foi possível alterar o status.', true) }
-  }
-
-  const confirmDelete = async () => {
-    if (!pendingDelete) return
-    setSaving(true)
-    try {
-      await deleteProduct(pendingDelete.id); await removeProductImage(pendingDelete.imageUrl)
-      setProducts((current) => current.filter((product) => product.id !== pendingDelete.id)); setPendingDelete(null); notify('Produto excluído.')
-    } catch (error) { notify(error instanceof Error ? error.message : 'Não foi possível excluir o produto.', true) } finally { setSaving(false) }
-  }
-
-  if (!ready) return <main className="admin-shell admin-center"><LoaderCircle className="admin-spinner" /><span>Preparando seu painel...</span></main>
-  if (!isSupabaseConfigured) return <main className="admin-shell admin-center"><img src="/Logo PNG Caramelo.png" alt="Finessência" className="admin-logo" /><h1>Conecte o Supabase</h1><p>Adicione as variáveis do arquivo <code>.env.example</code> para ativar o painel administrativo.</p></main>
-  if (!authenticated) return <main className="admin-shell admin-center"><section className="admin-login"><img src="/Logo PNG Caramelo.png" alt="Finessência" className="admin-logo" /><p className="admin-eyebrow">ÁREA RESTRITA</p><h1>Boas-vindas de volta.</h1><p>Entre para cuidar do catálogo da Finessência.</p><form onSubmit={handleLogin}><label>E-mail<input className={inputClass} type="email" required value={login.email} onChange={(event) => setLogin({ ...login, email: event.target.value })} /></label><label>Senha<input className={inputClass} type="password" required value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} /></label><button className="admin-button" disabled={saving}>{saving ? 'Entrando...' : 'Entrar'}</button></form></section>{toast && <Toast {...toast} />}</main>
-
-  return <main className="admin-shell"><header className="admin-header"><a href="/" aria-label="Ver site da Finessência"><img src="/Logo PNG Caramelo.png" alt="Finessência" className="admin-logo" /></a><div><span>PAINEL ADMINISTRATIVO</span><button className="admin-text-button" onClick={async () => { await createSupabaseClient().auth.signOut(); setAuthenticated(false) }}><LogOut size={15} /> Sair</button></div></header><section className="admin-content"><div className="admin-title-row"><div><p className="admin-eyebrow">CATÁLOGO</p><h1>Produtos</h1><p>Organize as criações que aparecem na sua vitrine.</p></div><button className="admin-button" onClick={openCreate}><Plus size={17} /> Adicionar produto</button></div><div className="admin-stats"><Stat label="Total de produtos" value={products.length} /><Stat label="Produtos ativos" value={products.filter((item) => item.active).length} /><Stat label="Produtos inativos" value={products.filter((item) => !item.active).length} /><Stat label="Categorias" value={categories.length} /></div><div className="admin-toolbar"><label className="admin-search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar produto..." /></label><select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Todos os status</option><option value="active">Ativos</option><option value="inactive">Inativos</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">Todas as categorias</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></div>{loading ? <div className="admin-loading"><LoaderCircle className="admin-spinner" /> Carregando produtos...</div> : filtered.length === 0 ? <section className="admin-empty"><ImagePlus size={35} /><h2>{products.length ? 'Nenhum produto encontrado.' : 'Nenhum produto cadastrado'}</h2><p>{products.length ? 'Tente ajustar a busca ou os filtros.' : 'Comece adicionando o primeiro produto ao catálogo da Finessência.'}</p>{products.length === 0 && <button className="admin-button" onClick={openCreate}><Plus size={17} /> Adicionar produto</button>}</section> : <section className="admin-list">{filtered.map((product) => <article className="admin-product" key={product.id}><div className="admin-product-image">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <ImagePlus size={22} />}</div><div className="admin-product-main"><h2>{product.name}</h2><p>{product.category || 'Sem categoria'}{product.essence && ` · ${product.essence}`}</p><strong>{formatPrice(product.price)}</strong></div><span className={`admin-status ${product.active ? 'is-active' : ''}`}>{product.active ? 'Ativo' : 'Inativo'}</span><time>Atualizado em {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(product.updatedAt))}</time><div className="admin-actions"><button aria-label={`Editar ${product.name}`} onClick={() => openEdit(product)}><Pencil size={16} /></button><button aria-label={product.active ? `Desativar ${product.name}` : `Ativar ${product.name}`} onClick={() => toggleStatus(product)}><Check size={16} /></button><button aria-label={`Excluir ${product.name}`} className="is-danger" onClick={() => setPendingDelete(product)}><Trash2 size={16} /></button></div></article>)}</section>}</section>{formOpen && <ProductForm form={form} setForm={setForm} editing={editing} saving={saving} onClose={() => setFormOpen(false)} onSave={handleSave} onImage={handleImage} />}{pendingDelete && <div className="admin-modal-layer"><section className="admin-confirm"><button className="admin-close" onClick={() => setPendingDelete(null)}><X size={19} /></button><p className="admin-eyebrow">CONFIRMAÇÃO</p><h2>Excluir produto?</h2><p>Você tem certeza que deseja excluir <strong>“{pendingDelete.name}”</strong>? Essa ação não poderá ser desfeita.</p><div><button className="admin-secondary" onClick={() => setPendingDelete(null)}>Cancelar</button><button className="admin-button is-danger" disabled={saving} onClick={confirmDelete}>{saving ? 'Excluindo...' : 'Excluir'}</button></div></section></div>}{toast && <Toast {...toast} />}</main>
+  const [ready, setReady] = useState(false), [logged, setLogged] = useState(false), [view, setView] = useState<View>('products')
+  const [products, setProducts] = useState<Product[]>([]), [categories, setCategories] = useState<Taxonomy[]>([]), [essences, setEssences] = useState<Taxonomy[]>([])
+  const [loading, setLoading] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState(false)
+  const [query, setQuery] = useState(''), [status, setStatus] = useState('all'), [categoryFilter, setCategoryFilter] = useState('all')
+  const [login, setLogin] = useState({ email: '', password: '' }), [form, setForm] = useState<ProductInput | null>(null), [editing, setEditing] = useState<Product | null>(null)
+  const say = (text: string, bad = false) => { setMessage(text); setError(bad); window.setTimeout(() => setMessage(''), 4000) }
+  const load = async () => { setLoading(true); try { const [p, c, e] = await Promise.all([getProducts(), getTaxonomies('categories'), getTaxonomies('essences')]); setProducts(p); setCategories(c); setEssences(e) } catch (cause) { say(cause instanceof Error ? cause.message : 'Falha ao carregar catálogo.', true) } finally { setLoading(false) } }
+  useEffect(() => { if (!isSupabaseConfigured) { setReady(true); return }; createSupabaseClient().auth.getUser().then(({ data }) => { const allowed = Boolean(data.user && isAdmin(data.user.app_metadata)); setLogged(allowed); setReady(true); if (allowed) void load() }) }, [])
+  const filtered = useMemo(() => products.filter((p) => `${p.name} ${p.category ?? ''} ${p.essence ?? ''}`.toLowerCase().includes(query.toLowerCase()) && (status === 'all' || p.active === (status === 'active')) && (categoryFilter === 'all' || p.category === categoryFilter)), [products, query, status, categoryFilter])
+  const loginSubmit = async (event: FormEvent) => { event.preventDefault(); setLoading(true); try { const { data, error: authError } = await createSupabaseClient().auth.signInWithPassword(login); if (authError) throw authError; if (!isAdmin(data.user?.app_metadata)) throw new Error('Esta conta não tem acesso administrativo.'); setLogged(true); await load() } catch (cause) { say(cause instanceof Error ? cause.message : 'Falha no login.', true) } finally { setLoading(false) } }
+  const saveProduct = async (event: FormEvent) => { event.preventDefault(); if (!form || !form.name.trim()) return; setLoading(true); try { const saved = editing ? await updateProduct(editing.id, form) : await createProduct(form); setProducts((all) => editing ? all.map((item) => item.id === saved.id ? saved : item) : [saved, ...all]); setForm(null); setEditing(null); say('Produto salvo com sucesso.') } catch (cause) { say(cause instanceof Error ? cause.message : 'Não foi possível salvar.', true) } finally { setLoading(false) } }
+  if (!ready) return <main className="admin-shell admin-center"><LoaderCircle className="admin-spinner" /> Preparando painel...</main>
+  if (!isSupabaseConfigured) return <main className="admin-shell admin-center"><img src="/Logo PNG Caramelo.png" alt="Finessência" className="admin-logo" /><h1>Conecte o Supabase</h1><p>Adicione as variáveis do arquivo .env.local.</p></main>
+  if (!logged) return <main className="admin-shell admin-center"><form className="admin-login" onSubmit={loginSubmit}><img src="/Logo PNG Caramelo.png" alt="Finessência" className="admin-logo" /><p className="admin-eyebrow">ÁREA RESTRITA</p><h1>Entrar</h1><label>E-mail<input className="admin-input" type="email" required value={login.email} onChange={(e) => setLogin({ ...login, email: e.target.value })} /></label><label>Senha<input className="admin-input" type="password" required value={login.password} onChange={(e) => setLogin({ ...login, password: e.target.value })} /></label><button className="admin-button" disabled={loading}>Entrar</button></form>{message && <Toast text={message} error={error} />}</main>
+  const title = view === 'products' ? 'Produtos' : view === 'categories' ? 'Categorias' : 'Essências'
+  return <main className="admin-shell"><header className="admin-header"><a href="/"><img src="/Logo PNG Caramelo.png" alt="Finessência" className="admin-logo" /></a><button className="admin-text-button" onClick={async () => { await createSupabaseClient().auth.signOut(); setLogged(false) }}><LogOut size={15} /> Sair</button></header><section className="admin-content"><nav className="admin-tabs"><button className={view === 'products' ? 'is-current' : ''} onClick={() => setView('products')}><FolderTree size={16} /> Produtos</button><button className={view === 'categories' ? 'is-current' : ''} onClick={() => setView('categories')}><FolderTree size={16} /> Categorias</button><button className={view === 'essences' ? 'is-current' : ''} onClick={() => setView('essences')}><Sparkles size={16} /> Essências</button></nav><div className="admin-title-row"><div><p className="admin-eyebrow">CATÁLOGO</p><h1>{title}</h1><p>{view === 'products' ? 'Organize as criações que aparecem na sua vitrine.' : 'Gerencie as opções que aparecem nos produtos.'}</p></div>{view === 'products' && <button className="admin-button" onClick={() => { setEditing(null); setForm(blank) }}><Plus size={16} /> Adicionar produto</button>}</div>{view === 'products' ? <Products products={products} categories={categories} filtered={filtered} query={query} status={status} categoryFilter={categoryFilter} setQuery={setQuery} setStatus={setStatus} setCategoryFilter={setCategoryFilter} onEdit={(p) => { setEditing(p); setForm({ name:p.name, description:p.description ?? '', price:p.price, category:p.category ?? '', essence:p.essence ?? '', detail:p.detail ?? '', active:p.active, imageUrl:p.imageUrl }) }} onDelete={async (p) => { if (!window.confirm(`Excluir “${p.name}”?`)) return; await deleteProduct(p.id); setProducts(products.filter((item) => item.id !== p.id)); say('Produto excluído.') }} onToggle={async (p) => { const saved = await updateProduct(p.id, { name:p.name, description:p.description ?? '', price:p.price, category:p.category ?? '', essence:p.essence ?? '', detail:p.detail ?? '', active:!p.active, imageUrl:p.imageUrl }); setProducts(products.map((item) => item.id === saved.id ? saved : item)) }} /> : <Taxonomies kind={view} items={view === 'categories' ? categories : essences} products={products} setItems={view === 'categories' ? setCategories : setEssences} say={say} />}</section>{form && <ProductForm form={form} setForm={setForm} categories={categories} essences={essences} onClose={() => setForm(null)} onSubmit={saveProduct} loading={loading} />}{message && <Toast text={message} error={error} />}</main>
 }
 
-function Stat({ label, value }: { label: string; value: number }) { return <article><strong>{value}</strong><span>{label}</span></article> }
-function Toast({ message, error }: { message: string; error?: boolean }) { return <div className={`admin-toast${error ? ' is-error' : ''}`}>{message}</div> }
-function ProductForm({ form, setForm, editing, saving, onClose, onSave, onImage }: { form: ProductInput; setForm: React.Dispatch<React.SetStateAction<ProductInput>>; editing: Product | null; saving: boolean; onClose: () => void; onSave: (event: FormEvent) => void; onImage: (event: ChangeEvent<HTMLInputElement>) => void }) {
-  const set = (key: keyof ProductInput, value: string | number | boolean | null) => setForm((current) => ({ ...current, [key]: value }))
-  return <div className="admin-modal-layer"><section className="admin-modal"><button className="admin-close" onClick={onClose}><X size={19} /></button><p className="admin-eyebrow">{editing ? 'EDITAR PRODUTO' : 'NOVO PRODUTO'}</p><h2>{editing ? editing.name : 'Adicionar produto'}</h2><form onSubmit={onSave}><div className="admin-form-grid"><label>Nome*<input className={inputClass} required value={form.name} onChange={(event) => set('name', event.target.value)} /></label><label>Preço (R$)*<input className={inputClass} type="number" required min="0" step="0.01" value={form.price || ''} onChange={(event) => set('price', Number(event.target.value))} /></label><label>Categoria<input className={inputClass} value={form.category} onChange={(event) => set('category', event.target.value)} placeholder="Ex.: Velas" /></label><label>Essência / fragrância<input className={inputClass} value={form.essence} onChange={(event) => set('essence', event.target.value)} placeholder="Ex.: Lavanda" /></label><label>Detalhe<input className={inputClass} value={form.detail} onChange={(event) => set('detail', event.target.value)} placeholder="Ex.: 120 g" /></label><label className="admin-switch-label">Visível no catálogo<input type="checkbox" checked={form.active} onChange={(event) => set('active', event.target.checked)} /><span className="admin-switch" /></label><label className="admin-description">Descrição<textarea className={inputClass} rows={4} value={form.description} onChange={(event) => set('description', event.target.value)} /></label></div><label className="admin-upload">{form.imageUrl ? <img src={form.imageUrl} alt="Prévia do produto" /> : <><ImagePlus size={30} /><strong>Arraste a imagem ou selecione um arquivo</strong><span>JPG, PNG ou WEBP · até 5 MB</span></>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={onImage} disabled={saving} /></label><div className="admin-form-actions"><button type="button" className="admin-secondary" onClick={onClose}>Cancelar</button><button className="admin-button" disabled={saving}>{saving ? 'Salvando...' : 'Salvar produto'}</button></div></form></section></div>
+function Products({ products, categories, filtered, query, status, categoryFilter, setQuery, setStatus, setCategoryFilter, onEdit, onDelete, onToggle }: { products:Product[]; categories:Taxonomy[]; filtered:Product[]; query:string; status:string; categoryFilter:string; setQuery:(v:string)=>void; setStatus:(v:string)=>void; setCategoryFilter:(v:string)=>void; onEdit:(p:Product)=>void; onDelete:(p:Product)=>void; onToggle:(p:Product)=>void }) { return <><div className="admin-stats"><Stat label="Total de produtos" value={products.length} /><Stat label="Produtos ativos" value={products.filter((p) => p.active).length} /><Stat label="Produtos inativos" value={products.filter((p) => !p.active).length} /><Stat label="Categorias" value={categories.length} /></div><div className="admin-toolbar"><label className="admin-search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar produto..." /></label><select value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">Todos os status</option><option value="active">Ativos</option><option value="inactive">Inativos</option></select><select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}><option value="all">Todas as categorias</option>{categories.map((c) => <option key={c.id}>{c.name}</option>)}</select></div><section className="admin-list">{filtered.map((p) => <article className="admin-product" key={p.id}><div className="admin-product-image">{p.imageUrl && <img src={p.imageUrl} alt="" />}</div><div className="admin-product-main"><h2>{p.name}</h2><p>{p.category || 'Sem categoria'}{p.essence && ` · ${p.essence}`}</p><strong>{formatPrice(p.price)}</strong></div><span className={`admin-status ${p.active ? 'is-active' : ''}`}>{p.active ? 'Ativo' : 'Inativo'}</span><time>Atualizado em {new Intl.DateTimeFormat('pt-BR').format(new Date(p.updatedAt))}</time><div className="admin-actions"><button onClick={() => onEdit(p)}><Pencil size={16} /></button><button onClick={() => onToggle(p)}><Sparkles size={16} /></button><button className="is-danger" onClick={() => void onDelete(p)}><Trash2 size={16} /></button></div></article>)}</section></> }
+function Taxonomies({ kind, items, products, setItems, say }: { kind:TaxonomyKind; items:Taxonomy[]; products:Product[]; setItems:(v:Taxonomy[])=>void; say:(t:string,b?:boolean)=>void }) { const [name,setName]=useState(''), [editing,setEditing]=useState<Taxonomy|null>(null); const label=kind==='categories'?'categoria':'essência'; const save=async(e:FormEvent)=>{e.preventDefault();try{const saved=editing?await updateTaxonomy(kind,editing,name):await createTaxonomy(kind,name);setItems(editing?items.map(i=>i.id===saved.id?saved:i):[...items,saved].sort((a,b)=>a.name.localeCompare(b.name)));setName('');setEditing(null);say('Salvo com sucesso.')}catch(cause){say(cause instanceof Error?cause.message:'Não foi possível salvar.',true)}}; return <div className="admin-taxonomy"><form className="admin-taxonomy-form" onSubmit={save}><label>{editing?'Renomear':'Nova'} {label}<input className="admin-input" value={name} onChange={(e)=>setName(e.target.value)} required /></label><button className="admin-button">{editing?'Salvar':'Adicionar'}</button>{editing&&<button type="button" className="admin-secondary" onClick={()=>{setEditing(null);setName('')}}>Cancelar</button>}</form><section className="admin-taxonomy-list">{items.map((item)=><article key={item.id}><div><h2>{item.name}</h2><p>{products.filter(p=>p[kind==='categories'?'category':'essence']===item.name).length} produto(s) associado(s)</p></div><div className="admin-actions"><button onClick={()=>{setEditing(item);setName(item.name)}}><Pencil size={16}/></button><button className="is-danger" onClick={async()=>{try{await deleteTaxonomy(kind,item);setItems(items.filter(i=>i.id!==item.id));say('Excluído.')}catch(cause){say(cause instanceof Error?cause.message:'Não foi possível excluir.',true)}}}><Trash2 size={16}/></button></div></article>)}</section></div> }
+function ProductForm({ form,setForm,categories,essences,onClose,onSubmit,loading }: { form:ProductInput;setForm:(p:ProductInput)=>void;categories:Taxonomy[];essences:Taxonomy[];onClose:()=>void;onSubmit:(e:FormEvent)=>void;loading:boolean }) {
+  const [uploading, setUploading] = useState(false)
+  const set = (key:keyof ProductInput,value:string|number|boolean|null) => setForm({...form,[key]:value})
+  const upload = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) return; setUploading(true); try { set('imageUrl', await uploadProductImage(file)) } finally { setUploading(false) } }
+  return <div className="admin-modal-layer"><section className="admin-modal"><h2>{form.name||'Novo produto'}</h2><form onSubmit={onSubmit}><div className="admin-form-grid"><label>Nome<input className="admin-input" required value={form.name} onChange={e=>set('name',e.target.value)}/></label><label>Preço<input className="admin-input" type="number" step="0.01" value={form.price||''} onChange={e=>set('price',Number(e.target.value))}/></label><label>Categoria<select className="admin-input" value={form.category} onChange={e=>set('category',e.target.value)}><option value="">Sem categoria</option>{categories.map(i=><option key={i.id}>{i.name}</option>)}</select></label><label>Essência<select className="admin-input" value={form.essence} onChange={e=>set('essence',e.target.value)}><option value="">Sem essência</option>{essences.map(i=><option key={i.id}>{i.name}</option>)}</select></label><label>Detalhe<input className="admin-input" value={form.detail} onChange={e=>set('detail',e.target.value)}/></label><label className="admin-switch-label">Visível<input type="checkbox" checked={form.active} onChange={e=>set('active',e.target.checked)}/><span className="admin-switch"/></label><label className="admin-description">Descrição<textarea className="admin-input" rows={4} value={form.description} onChange={e=>set('description',e.target.value)}/></label></div><label className="admin-upload">{form.imageUrl ? <img src={form.imageUrl} alt="Prévia"/> : <><ImagePlus size={26}/><strong>Selecionar imagem</strong><span>JPG, PNG ou WEBP · até 5 MB</span></>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} disabled={uploading}/></label><div className="admin-form-actions"><button type="button" className="admin-secondary" onClick={onClose}>Cancelar</button><button className="admin-button" disabled={loading||uploading}>{uploading?'Enviando imagem...':'Salvar'}</button></div></form></section></div>
 }
+function Stat({label,value}:{label:string;value:number}){return <article><strong>{value}</strong><span>{label}</span></article>};function Toast({text,error}:{text:string;error:boolean}){return <div className={`admin-toast${error?' is-error':''}`}>{text}</div>}
