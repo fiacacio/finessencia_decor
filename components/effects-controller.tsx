@@ -36,5 +36,23 @@ export function EffectsController() {
     }
   }, [])
 
+  useEffect(() => {
+    const video = document.querySelector<HTMLVideoElement>('.hero-image video')
+    const title = document.querySelector<HTMLElement>('.hero-copy h1')
+    if (!video || !title) return
+    const moments = [3.16, 6.56]
+    let fired = [false, false], previous = 0, frame = 0
+    const fire = () => { title.classList.remove('is-spraying'); void title.offsetWidth; title.classList.add('is-spraying') }
+    const watch = () => {
+      const time = video.currentTime
+      if (time < previous) fired = [false, false]
+      moments.forEach((moment, index) => { if (!fired[index] && time >= moment) { fired[index] = true; fire() } })
+      previous = time
+      frame = requestAnimationFrame(watch)
+    }
+    frame = requestAnimationFrame(watch)
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
   return null
 }
