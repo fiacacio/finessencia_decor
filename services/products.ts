@@ -2,27 +2,28 @@ import { createSupabaseClient } from '@/lib/supabase'
 import { mapProduct, productToRow, type Product, type ProductInput } from '@/lib/products'
 
 const table = 'products'
+const selection = '*, category:categories!category_id(id, name), product_essences(essence:essences(id, name))'
 
 export async function getProducts(activeOnly = false): Promise<Product[]> {
   const supabase = createSupabaseClient()
-  let query = supabase.from(table).select('*').order('updated_at', { ascending: false })
+  let query = supabase.from(table).select(selection).order('updated_at', { ascending: false })
   if (activeOnly) query = query.eq('active', true)
   const { data, error } = await query
   if (error) throw error
   return data.map(mapProduct)
 }
 
-export async function createProduct(input: ProductInput) {
-  const { data, error } = await createSupabaseClient().from(table).insert(productToRow(input)).select().single()
-  if (error) throw error
+async function saveProduct(id: string | null, input: ProductInput): Promise<Product> {
+  const payload = productToRow(input)
+  const supabase = createSupabaseClient()
+  const { data: productId, error } = await supabase.rpc('save_product', { p_id: id, p_input: payload })
+  if (error) throw new Error(error.message)
+  const { data, error: readError } = await supabase.from(table).select(selection).eq('id', productId).single()
+  if (readError) throw new Error(readError.message)
   return mapProduct(data)
 }
-
-export async function updateProduct(id: string, input: ProductInput) {
-  const { data, error } = await createSupabaseClient().from(table).update(productToRow(input)).eq('id', id).select().single()
-  if (error) throw error
-  return mapProduct(data)
-}
+export const createProduct = (input: ProductInput) => saveProduct(null, input)
+export const updateProduct = (id: string, input: ProductInput) => saveProduct(id, input)
 
 export async function deleteProduct(id: string) {
   const { error } = await createSupabaseClient().from(table).delete().eq('id', id)
