@@ -17,11 +17,11 @@ export function TouchCarousels() {
         viewport.dataset.touchCarousel = 'true'
         let touching = false
         let resumeAt = 0
-        let previousTime = 0
+        let previousTime = performance.now()
         let position = viewport.scrollLeft
         let frame = 0
         const pause = () => { touching = true }
-        const resume = () => { touching = false; resumeAt = performance.now() + 3000 }
+        const resume = () => { position = viewport.scrollLeft; touching = false; resumeAt = performance.now() + 1000 }
         const tick = (time: number) => {
           const elapsed = Math.min(time - previousTime, 50)
           previousTime = time
@@ -29,7 +29,8 @@ export function TouchCarousels() {
           if (touching || time < resumeAt || reducedMotion.matches || document.hidden) {
             position = viewport.scrollLeft
           } else if (cycle > 0) {
-            position = (position + elapsed * 0.025) % cycle
+            const duration = viewport.classList.contains('product-grid') ? 54000 : 78000
+            position = (position + elapsed * cycle / duration) % cycle
             viewport.scrollLeft = position
           }
           frame = requestAnimationFrame(tick)

@@ -254,7 +254,7 @@ body { background:radial-gradient(ellipse at 82% 10%,#f1cc9650 0%,transparent 42
 
 /* Nossa Essência: o fundo entra e sai por transparência, sem faixas de cor. */
 .about { background:transparent; animation:none; }
-.about::before { z-index:0; inset:0; height:auto; background:radial-gradient(ellipse at 82% 10%,#f1cc963e 0%,transparent 42%),radial-gradient(ellipse at 16% 78%,#eeb77f1d 0%,transparent 44%),linear-gradient(115deg,#fcf8f2 0%,#f9ead5 51%,#fcf8f1 100%); background-size:115% 115%,115% 115%,100% 100%; content:''; pointer-events:none; -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); animation:ambient-background 28s ease-in-out infinite alternate; }
+.about::before { z-index:0; inset:0; height:auto; background:radial-gradient(ellipse at 82% 10%,#faf6f03e 0%,transparent 42%),radial-gradient(ellipse at 16% 78%,#a75e2b1d 0%,transparent 44%),linear-gradient(115deg,#dca66e 0%,var(--caramelo) 51%,#d59a60 100%); background-size:115% 115%,115% 115%,100% 100%; content:''; pointer-events:none; -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); animation:ambient-background 28s ease-in-out infinite alternate; }
 .about::after { -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); }
 @media (prefers-reduced-motion:reduce) { .about::before { animation:none; } }
 
@@ -358,3 +358,25 @@ body { background:radial-gradient(ellipse at 82% 10%,#f1cc9650 0%,transparent 42
 .catalog-filter:not(:empty) { margin-bottom:24px; }
 .catalog-filter button { border:1px solid var(--cobre); background:transparent; color:var(--cobre); padding:8px 14px; cursor:pointer; font:inherit; }
 .catalog-empty { text-align:center; font-size:13px; margin-bottom:24px; }
+
+.about-copy .eyebrow { color:var(--marrom); }
+
+/* Nossa Essência: defined caramel panel with translucent internal highlights. */
+.about { --about-base-fade:48px; background:linear-gradient(to bottom,var(--creme) 0%,var(--creme) calc(100% - var(--about-base-fade)),transparent 100%); padding:48px 2.5%; }
+.about::before,.about::after { content:none; }
+.about-copy { isolation:isolate; overflow:hidden; max-width:none; width:100%; padding:54px clamp(24px,5vw,80px); border:1px solid #a75e2b33; border-radius:20px; background:#a96535; color:var(--creme); }
+.about-copy::before { position:absolute; z-index:-1; inset:0; content:''; pointer-events:none; background:radial-gradient(ellipse at 10% 0%,#faf6f026 0%,transparent 55%),radial-gradient(ellipse at 95% 100%,#ca8a4a40 0%,transparent 52%); background-size:115% 115%; animation:ambient-background 28s ease-in-out infinite alternate; }
+.about-copy .eyebrow { color:var(--creme); margin-bottom:24px; transform:none; }
+.about-copy h2 { max-width:1050px; white-space:normal; text-wrap:balance; color:var(--creme); }
+.about-copy > p:not(.eyebrow) { color:var(--creme); }
+@media (max-width:700px) {
+  .about { --about-base-fade:32px; padding:32px 3%; }
+  .about-copy { padding:36px 24px; border-radius:16px; }
+  .about-copy .eyebrow { margin-bottom:20px; }
+}
+@media (prefers-reduced-motion:reduce) { .about-copy::before { animation:none; } }
+.about-copy::after { position:absolute; z-index:2; inset:9px; border:1px solid #e8d3b5; border-radius:12px; content:''; pointer-events:none; opacity:0; clip-path:inset(0 100% 0 0); transition:clip-path .85s cubic-bezier(.2,.8,.25,1),opacity .35s ease; }
+.about-copy:hover::after { opacity:.9; clip-path:inset(0); }
+@media (hover:none) { .about-copy::after { opacity:.9; clip-path:inset(0); } }
+@media (max-width:700px) { .about-copy::after { inset:7px; border-radius:10px; } }
+@media (prefers-reduced-motion:reduce) { .about-copy::after { transition:none; } }
