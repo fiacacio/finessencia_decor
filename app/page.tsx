@@ -1,3 +1,6 @@
+import { AnnouncementBar } from '@/components/announcement-bar'
+import { defaultAnnouncement } from '@/lib/announcement'
+import { getAnnouncement } from '@/services/announcement'
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa6'
 import Image from 'next/image'
 import { EffectsController } from '@/components/effects-controller'
@@ -36,6 +39,10 @@ const webpSource = (source: string) => source.replace(/\.(png|jpe?g|jfif)$/i, '.
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
+  let announcement = defaultAnnouncement
+  if (isSupabaseConfigured) {
+    try { announcement = await getAnnouncement() } catch { /* Keep the default announcement until settings are available. */ }
+  }
   let catalogProducts = fallbackCatalogProducts
   if (isSupabaseConfigured) {
     try {
@@ -47,7 +54,7 @@ export default async function Page() {
   return <main className="site-shell">
     <LoadingScreen />
     <EffectsController />
-    <div className="shipping-bar">✦ &nbsp; FRETE GRÁTIS PARA PEDIDOS ACIMA DE R$ 199 &nbsp; ✦</div>
+    <AnnouncementBar settings={announcement} />
     <header className="site-header"><div className="top-row">
       <a className="brand" href="#inicio" aria-label="Finessência — início"><img src="/Logo PNG Caramelo.png" alt="Finessência decor aromático" /></a>
       <div className="header-actions"><a href={instagramUrl} target="_blank" rel="noreferrer" aria-label="Instagram"><FaInstagram /></a><a href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="WhatsApp"><FaWhatsapp /></a></div>
