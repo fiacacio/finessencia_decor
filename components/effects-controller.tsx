@@ -41,17 +41,20 @@ export function EffectsController() {
     const title = document.querySelector<HTMLElement>('.hero-copy h1')
     if (!video || !title) return
     const moments = [3.16, 6.56]
+    const videoContainer = video.parentElement
     let fired = [false, false], previous = 0, frame = 0
     const fire = () => { title.classList.remove('is-spraying'); void title.offsetWidth; title.classList.add('is-spraying') }
     const watch = () => {
       const time = video.currentTime
+      // Finish the 1.4s fade before the original ending begins around 15.5s.
+      videoContainer?.classList.toggle('is-ending', time >= 14)
       if (time < previous) fired = [false, false]
       moments.forEach((moment, index) => { if (!fired[index] && time >= moment) { fired[index] = true; fire() } })
       previous = time
       frame = requestAnimationFrame(watch)
     }
     frame = requestAnimationFrame(watch)
-    return () => cancelAnimationFrame(frame)
+    return () => { cancelAnimationFrame(frame); videoContainer?.classList.remove('is-ending') }
   }, [])
 
   return null

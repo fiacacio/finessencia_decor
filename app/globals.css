@@ -1,6 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Italiana&family=Montserrat:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 
+/* Encerramento centralizado independentemente do recorte do vídeo. */
+.hero-video-ending { position:absolute; z-index:2; inset:0; display:grid; place-items:center; background:#a75e2b; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .45s ease-out,visibility 0s linear .45s; }
+.hero-image.is-ending .hero-video-ending { opacity:1; visibility:visible; transition:opacity 1.4s ease-in-out; }
+.hero-image .hero-video-ending img { display:block; width:52%; max-width:360px; height:auto; object-fit:contain; opacity:0; transform:scale(.96); transition:opacity .3s ease-out,transform 0s linear .45s; }
+.hero-image.is-ending .hero-video-ending img { opacity:1; transform:scale(1.03); transition:opacity 1.2s ease-in-out 1.5s,transform 4.5s ease-out 1.5s; }
+@media (prefers-reduced-motion:reduce) { .hero-video-ending,.hero-image .hero-video-ending img,.hero-image.is-ending .hero-video-ending,.hero-image.is-ending .hero-video-ending img { transition:none; }.hero-image .hero-video-ending img { transform:none; } }
+
 .shipping-bar { gap:12px; padding:5px 16px; text-align:center; line-height:1.5; overflow-wrap:anywhere; }
 .shipping-bar > span:nth-child(2) { min-width:0; }
 .shipping-bar > span[aria-hidden] { flex-shrink:0; }
@@ -58,8 +65,8 @@
 @media (prefers-reduced-motion:reduce) { .brand img,.brand::after { transition:none; } }
 
 /* Ícones sociais: resposta direta e discreta ao toque do cursor. */
-.header-actions a { transition:color .2s ease; }
-.header-actions a:hover { color:var(--caramelo); }
+.header-actions a { color:var(--caramelo); transition:color .2s ease; }
+.header-actions a:hover,.header-actions a:focus-visible { color:var(--marrom); }
 .hero-image { height:calc(100svh - 380px); min-height:440px; overflow:hidden; border-radius:150px 0 0; }
 .hero-image img,.hero-image video { width:100%; height:100%; object-fit:cover; object-position:center; }
 .hero-image,.hero-copy { position:relative; z-index:1; }.hero-copy { padding:55px 25px; }
@@ -81,8 +88,8 @@
 .hero-copy .button { min-width:198px; height:52px; font-size:10px; }
 
 /* CTA: resposta tátil discreta, com traço interno de mesma linguagem dos cards. */
-.hero-copy .primary { position:relative; isolation:isolate; overflow:hidden; background:var(--cobre); transition:background .28s ease,transform .22s ease,box-shadow .28s ease; }
-.hero-copy .primary::after { position:absolute; z-index:0; inset:5px; border:1px solid #faf6f0c7; content:''; opacity:0; pointer-events:none; transform:scale(.94); transition:opacity .25s ease,transform .35s cubic-bezier(.2,.8,.25,1); }
+.hero-copy .primary { position:relative; isolation:isolate; overflow:hidden; border-radius:0 0 26px 0; background:var(--cobre); transition:background .28s ease,transform .22s ease,box-shadow .28s ease; }
+.hero-copy .primary::after { position:absolute; z-index:0; inset:5px; border-radius:0 0 21px 0; border:1px solid #faf6f0c7; content:''; opacity:0; pointer-events:none; transform:scale(.94); transition:opacity .25s ease,transform .35s cubic-bezier(.2,.8,.25,1); }
 .hero-copy .primary:hover { background:#b96c35; box-shadow:0 7px 16px #a75e2b26; }
 .hero-copy .primary:hover::after { opacity:.7; transform:scale(1); }
 .hero-copy .primary>span { position:relative; z-index:1; transition:transform .28s cubic-bezier(.2,.8,.25,1); }
@@ -92,9 +99,11 @@
 @media (prefers-reduced-motion:reduce) { .hero-copy .primary,.hero-copy .primary::after { transition:none; } }
 
 /* O título permanece sóbrio e recebe, de tempos em tempos, uma luz lateral quente. */
-.hero-copy h1 { background:linear-gradient(45deg,var(--marrom) 0 42%,#e4c28d 46%,var(--caramelo) 50%,#e4c28d 54%,var(--marrom) 58% 100%); background-position:0% 0%; background-size:500% 400%; -webkit-background-clip:text; background-clip:text; color:transparent; }
-.hero-copy h1.is-spraying { animation:hero-title-gradient 3s cubic-bezier(.4,0,.2,1) both; }
-@keyframes hero-title-gradient { from { background-position:0% 0%; } to { background-position:100% 100%; } }
+.hero-copy h1 { background:linear-gradient(var(--hero-title-angle,135deg),var(--marrom) 0 42%,#e4c28d 46%,var(--caramelo) 50%,#e4c28d 54%,var(--marrom) 58% 100%); background-position:100% 100%; background-size:500% 400%; -webkit-background-clip:text; background-clip:text; color:transparent; }
+.hero-copy h1.is-spraying { animation:hero-title-gradient 3.3s cubic-bezier(.25,.1,.75,.9) both; }
+/* Oversized backgrounds move down/right as their position decreases. */
+@keyframes hero-title-gradient { from { background-position:100% 100%; } to { background-position:0% 0%; } }
+@media (max-width:700px) { .hero-copy h1 { --hero-title-angle:180deg; background-size:100% 400%; } }
 @media (prefers-reduced-motion:reduce) { .hero-copy h1 { animation:none; } }
 @media (max-width:700px) { .hero-copy .eyebrow { margin-bottom:18px; font-size:9px; }.hero-copy h1 { font-size:55px; }.hero-copy > p:not(.eyebrow) { font-size:10px; }.hero-copy .button { min-width:172px; height:45px; font-size:9px; } }
 
@@ -346,12 +355,11 @@ body { background:radial-gradient(ellipse at 82% 10%,#f1cc9650 0%,transparent 42
 .shipping-marquee-track { display:flex; width:max-content; animation:shipping-marquee linear infinite; }
 .shipping-marquee-track > span { flex-shrink:0; white-space:nowrap; }
 .shipping-marquee-separator { display:inline-block; margin-inline:36px; }
-.shipping-marquee-pause { flex-shrink:0; border:1px solid currentColor; border-radius:3px; background:transparent; color:inherit; cursor:pointer; min-width:28px; }
 @keyframes shipping-marquee { to { transform:translateX(-50%); } }
 @media (prefers-reduced-motion:reduce) {
   .shipping-marquee-track { animation:none; width:auto; }
   .shipping-marquee-track > span { white-space:normal; overflow-wrap:anywhere; flex-shrink:1; padding:0; }
-  .shipping-marquee-track > span + span,.shipping-marquee-pause { display:none; }
+  .shipping-marquee-track > span + span { display:none; }
 }
 .admin-fairs { display:grid; gap:16px; }
 .admin-fairs p,.admin-fair > span { margin:0; font-size:12px; line-height:1.6; }

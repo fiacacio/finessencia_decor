@@ -5,7 +5,6 @@ import { activeFairs, saoPauloDate, announcementTextColor, type Announcement } f
 
 export function AnnouncementBar({ settings }: { settings: Announcement }) {
   const [today, setToday] = useState(saoPauloDate)
-  const [paused, setPaused] = useState(false)
   useEffect(() => {
     const update = () => setToday(saoPauloDate())
     const timer = window.setInterval(update, 30000)
@@ -18,10 +17,9 @@ export function AnnouncementBar({ settings }: { settings: Announcement }) {
   return <div className={`shipping-bar${settings.marquee ? ' shipping-bar--marquee' : ''}`} style={{ backgroundColor: settings.color, color: announcementTextColor(settings.color) }}>
     {settings.marquee ? <>
       <span className="sr-only">{text}</span>
-      <div className="shipping-marquee-window" aria-hidden="true"><div className="shipping-marquee-track" style={{ animationDuration: `${Math.max(25, text.length * .22)}s`, animationPlayState: paused ? 'paused' : 'running' }}>
+      <div className="shipping-marquee-window" aria-hidden="true"><div className="shipping-marquee-track" style={{ animationDuration: `${Math.max(25, text.length * .22)}s` }}>
         {[0, 1].map((copy) => <span key={copy}>{(settings.show_fairs ? ['Próximas feiras', ...fairs.map((fair) => fair.label)] : [text]).map((item, index) => <span key={index}>{item}<span className="shipping-marquee-separator">✦</span></span>)}</span>)}
       </div></div>
-      <button className="shipping-marquee-pause" onClick={() => setPaused(!paused)} type="button" aria-label={paused ? 'Retomar letreiro' : 'Pausar letreiro'}>{paused ? '▶' : 'Ⅱ'}</button>
     </> : <><span aria-hidden="true">✦</span><span>{text}</span><span aria-hidden="true">✦</span></>}
   </div>
 }
