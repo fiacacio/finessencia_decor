@@ -133,7 +133,7 @@
 .catalog h2 { margin:0 0 52px; font-family:Italiana, Georgia, serif; font-size:clamp(30px,3.4vw,47px); font-weight:400; letter-spacing:-.035em; }
 .catalog-grid { display:grid; max-width:1680px; grid-template-columns:repeat(5,minmax(0,1fr)); gap:58px clamp(40px,4vw,80px); margin:auto; }
 .catalog-card { min-width:0; text-align:center; }.catalog-media { aspect-ratio:4 / 5; overflow:hidden; border-radius:50% 50% 8px 8px / 32% 32% 8px 8px; background:var(--bege); }.catalog-media img { width:100%; height:100%; object-fit:cover; transition:transform .35s ease; }.catalog-card:hover .catalog-media img { transform:scale(1.035); }
-.catalog-info { display:grid; grid-template-rows:58px 17px 38px 32px; align-items:start; margin-top:18px; }.catalog-info h3 { margin:0; font-family:Italiana, Georgia, serif; font-size:clamp(19px,1.5vw,25px); font-weight:400; letter-spacing:.08em; line-height:1.14; text-transform:uppercase; }.catalog-info>p { margin:0; color:var(--cobre); font-size:10px; letter-spacing:.14em; }.catalog-info .catalog-description { align-self:center; color:var(--marrom); font-size:10px; letter-spacing:0; line-height:1.45; }
+.catalog-info { display:grid; grid-template-rows:minmax(58px,auto) minmax(17px,auto) minmax(38px,auto) minmax(32px,auto); row-gap:10px; align-items:start; margin-top:18px; }.catalog-info > * { min-width:0; overflow-wrap:anywhere; }.catalog-info h3 { margin:0; font-family:Italiana, Georgia, serif; font-size:clamp(19px,1.5vw,25px); font-weight:400; letter-spacing:.08em; line-height:1.14; text-transform:uppercase; }.catalog-info>p { margin:0; color:var(--cobre); font-size:10px; letter-spacing:.14em; }.catalog-info .catalog-description { align-self:center; color:var(--marrom); font-size:10px; letter-spacing:0; line-height:1.45; }
 .catalog-price { display:flex; align-items:center; justify-content:center; gap:12px; margin:0; }.catalog-price strong { font-size:13px; font-weight:600; letter-spacing:.04em; }.catalog-price a { display:flex; width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--cobre); border-radius:50%; color:var(--cobre); font-size:16px; transition:background .2s,color .2s; }.catalog-price a:hover { background:var(--cobre); color:var(--creme); }.catalog-contact-card { display:flex; min-width:0; min-height:0; aspect-ratio:4 / 5; flex-direction:column; align-items:center; justify-content:center; gap:17px; border:1px solid #a75e2b66; border-radius:50% 50% 8px 8px / 32% 32% 8px 8px; padding:24px; color:var(--cobre); transition:background .25s,color .25s; }.catalog-contact-card svg { font-size:31px; }.catalog-contact-card span { max-width:170px; font-size:9px; font-weight:600; letter-spacing:.14em; line-height:1.55; text-align:center; }.catalog-contact-card strong { border-bottom:1px solid currentColor; padding-bottom:4px; font-size:11px; letter-spacing:.12em; }.catalog-contact-card:hover { background:var(--cobre); color:var(--creme); }
 
 /* Traço orgânico que acompanha o arco da imagem ao explorar um produto. */
@@ -159,7 +159,7 @@
 .catalog-contact-card:hover::after { opacity:.82; transform:scale(1) rotate(0deg); }
 .catalog-contact-card > * { position:relative; z-index:1; }
 @media (prefers-reduced-motion:reduce) { .catalog-contact-card::after { transition:none; } }
-@media (max-width:700px) { .catalog { padding:70px 7% 80px; }.catalog h2 { margin-bottom:38px; }.catalog-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:42px 18px; }.catalog-info { grid-template-rows:42px 15px 48px 28px; margin-top:13px; }.catalog-info h3 { font-size:16px; }.catalog-info>p,.catalog-info .catalog-description { font-size:9px; }.catalog-price { gap:8px; }.catalog-price strong { font-size:11px; }.catalog-price a { width:26px; height:26px; font-size:14px; } }
+@media (max-width:700px) { .catalog { padding:70px 7% 80px; }.catalog h2 { margin-bottom:38px; }.catalog-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:42px 18px; }.catalog-info { grid-template-rows:minmax(42px,auto) minmax(15px,auto) minmax(48px,auto) minmax(28px,auto); row-gap:8px; margin-top:13px; }.catalog-info h3 { font-size:16px; }.catalog-info>p,.catalog-info .catalog-description { font-size:9px; }.catalog-price { gap:8px; }.catalog-price strong { font-size:11px; }.catalog-price a { width:26px; height:26px; font-size:14px; } }
 
 /* Nossa história: uma pausa editorial entre o mostruário e a essência da marca. */
 .story { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(40px,5vw,96px); align-items:center; padding:clamp(80px,9vw,145px) 8%; background:var(--bege); border-top:1px solid #ca8a4a1c; border-bottom:1px solid #ca8a4a1c; }
@@ -198,9 +198,10 @@ body { background:radial-gradient(ellipse at 82% 10%,#f1cc9650 0%,transparent 42
   .story { isolation:isolate; background:transparent; -webkit-mask-image:none; mask-image:none; }
   .story::after { position:absolute; z-index:0; inset:0; background:var(--bege); content:''; pointer-events:none; -webkit-mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 60px),transparent 100%); mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 60px),transparent 100%); }
   .story-copy,.story-image { position:relative; z-index:1; }
-  /* O fundo editorial do Hero é apagado no topo por uma máscara suave. */
-  .hero { overflow:hidden; }
-  .site-header { z-index:auto; }
+  /* Apenas a camada de fundo recebe a máscara; o vídeo permanece nítido. */
+  .hero { overflow:hidden; background:transparent; animation:none; }
+  /* Cabeçalho e início do hero revelam o mesmo fundo contínuo do body. */
+  .site-header { z-index:auto; background:transparent; animation:none; }
   .site-header::after { content:none; }
   .hero-background { position:absolute; z-index:0; inset:0; display:block; background:radial-gradient(ellipse at 82% 10%,#f1cc963e 0%,transparent 42%),radial-gradient(ellipse at 16% 78%,#eeb77f1d 0%,transparent 44%),linear-gradient(115deg,#fcf8f2 0%,#f9ead5 51%,#fcf8f1 100%); background-size:115% 115%,115% 115%,100% 100%; pointer-events:none; -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 52px); mask-image:linear-gradient(to bottom,transparent 0,#000 52px); animation:ambient-background 28s ease-in-out infinite alternate; }
   .hero::before,.hero::after { z-index:1; }
@@ -252,11 +253,20 @@ body { background:radial-gradient(ellipse at 82% 10%,#f1cc9650 0%,transparent 42
   .story-image:hover::before { clip-path:inset(0); opacity:.72; transition:clip-path .85s cubic-bezier(.2,.8,.25,1),opacity .2s ease; }
 }
 
-/* Nossa Essência: o fundo entra e sai por transparência, sem faixas de cor. */
-.about { background:transparent; animation:none; }
-.about::before { z-index:0; inset:0; height:auto; background:radial-gradient(ellipse at 82% 10%,#f1cc963e 0%,transparent 42%),radial-gradient(ellipse at 16% 78%,#eeb77f1d 0%,transparent 44%),linear-gradient(115deg,#fcf8f2 0%,#f9ead5 51%,#fcf8f1 100%); background-size:115% 115%,115% 115%,100% 100%; content:''; pointer-events:none; -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); animation:ambient-background 28s ease-in-out infinite alternate; }
-.about::after { -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); mask-image:linear-gradient(to bottom,transparent 0,#000 62px,#000 calc(100% - 60px),transparent 100%); }
-@media (prefers-reduced-motion:reduce) { .about::before { animation:none; } }
+/* Nossa Essência: cartão caramelo com conteúdo claro e centralizado. */
+.about { margin:24px 18px 16px; border-radius:20px; background:linear-gradient(160deg,#b27a50 0%,#a76332 55%,#ae6d38 100%); color:var(--creme); animation:none; }
+.about::before,.about::after { content:none; }
+.about-copy { max-width:1400px; padding:56px 32px; }
+.about-copy .eyebrow { margin:0 0 24px; color:var(--creme); transform:none; }
+.about-copy h2 { margin:0 0 24px; font-size:clamp(32px,3.3vw,48px); line-height:1.15; white-space:normal; }
+.about-copy > p:not(.eyebrow) { max-width:900px; color:var(--creme); font-size:17px; line-height:1.8; }
+@media (max-width:700px) {
+  .about { margin:20px 12px 16px; border-radius:18px; }
+  .about-copy { padding:40px 22px; }
+  .about-copy .eyebrow { margin-bottom:20px; }
+  .about-copy h2 { font-size:32px; }
+  .about-copy > p:not(.eyebrow) { font-size:14px; }
+}
 
 /* No mobile, os fundos também se desfazem nas trocas de seção; conteúdo e fotos ficam intactos. */
 @media (max-width:700px) {
