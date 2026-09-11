@@ -1,6 +1,9 @@
 'use client'
 
+import { defaultSpraySettings, type SpraySettings } from '@/lib/spray-settings'
+
 import { useEffect } from 'react'
+import { createSprayParticles } from '@/lib/spray-particles'
 
 export type FloralControl = { desktop: boolean; mobile: boolean; opacity: number; scale: number; rotation: number }
 export type FloralEffects = { large: FloralControl; small: FloralControl }
@@ -26,7 +29,7 @@ export function applyFloralEffects(effects: FloralEffects) {
   }
 }
 
-export function EffectsController() {
+export function EffectsController({ spraySettings = defaultSpraySettings }: { spraySettings?: SpraySettings }) {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(floralEffectsStorageKey)
@@ -41,11 +44,13 @@ export function EffectsController() {
     const title = document.querySelector<HTMLElement>('.hero-copy h1')
     if (!video || !title) return
     const moments = [3.16, 6.56]
+    const spray = spraySettings.spray_enabled ? createSprayParticles(video, moments, spraySettings) : null
     const videoContainer = video.parentElement
     let fired = [false, false], previous = 0, frame = 0
     const fire = () => { title.classList.remove('is-spraying'); void title.offsetWidth; title.classList.add('is-spraying') }
     const watch = () => {
       const time = video.currentTime
+      spray?.draw(time)
       // Finish the 1.4s fade before the original ending begins around 15.5s.
       videoContainer?.classList.toggle('is-ending', time >= 14)
       if (time < previous) fired = [false, false]
@@ -54,8 +59,8 @@ export function EffectsController() {
       frame = requestAnimationFrame(watch)
     }
     frame = requestAnimationFrame(watch)
-    return () => { cancelAnimationFrame(frame); videoContainer?.classList.remove('is-ending') }
-  }, [])
+    return () => { cancelAnimationFrame(frame); spray?.destroy(); videoContainer?.classList.remove('is-ending') }
+  }, [spraySettings])
 
   return null
 }

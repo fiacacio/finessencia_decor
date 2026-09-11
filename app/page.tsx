@@ -1,3 +1,5 @@
+import { defaultSpraySettings } from '@/lib/spray-settings'
+import { getSpraySettings } from '@/services/spray-settings'
 import { AnnouncementBar } from '@/components/announcement-bar'
 import { defaultAnnouncement } from '@/lib/announcement'
 import { getAnnouncement } from '@/services/announcement'
@@ -39,6 +41,10 @@ const webpSource = (source: string) => source.replace(/\.(png|jpe?g|jfif)$/i, '.
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
+  let spraySettings = defaultSpraySettings
+  if (isSupabaseConfigured) {
+    try { spraySettings = await getSpraySettings() } catch { /* Preserve the existing effect until settings are available. */ }
+  }
   let announcement = defaultAnnouncement
   if (isSupabaseConfigured) {
     try { announcement = await getAnnouncement() } catch { /* Keep the default announcement until settings are available. */ }
@@ -53,7 +59,7 @@ export default async function Page() {
   }
   return <main className="site-shell">
     <LoadingScreen />
-    <EffectsController />
+    <EffectsController spraySettings={spraySettings} />
     <AnnouncementBar settings={announcement} />
     <header className="site-header"><div className="top-row">
       <a className="brand" href="#inicio" aria-label="Finessência — início"><img src="/Logo PNG Caramelo.png" alt="Finessência decor aromático" /></a>
