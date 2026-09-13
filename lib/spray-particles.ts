@@ -15,6 +15,7 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   let width = 0, height = 0, originX = 0, originY = 0, travel = 0, fall = 0, dirty = false
   let mobile = false
+  let videoMask: Path2D | null = null
   const particles = Array.from({ length: settings.particle_count }, (_, index) => {
     const random = (seed: number) => {
       const value = Math.sin((index + 1) * seed) * 43758.5453
@@ -49,6 +50,19 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
       const title = hero.querySelector('h1')?.getBoundingClientRect()
       fall = title ? (headroom + title.bottom - box.top - originY + 45) * 1.25 : media.height * 1.4
     }
+    // Hide the mist behind the video frame, including its rounded corners.
+    // The original origin and trajectory remain unchanged underneath the frame.
+    const frame = video.parentElement || video
+    const frameBox = frame.getBoundingClientRect()
+    const frameStyle = getComputedStyle(frame)
+    const radius = (value: string) => {
+      const parts = value.split(' ')
+      const length = (part: string, size: number) => parseFloat(part) * (part.endsWith('%') ? size / 100 : 1)
+      return { x: length(parts[0], frameBox.width), y: length(parts[1] || parts[0], frameBox.height) }
+    }
+    videoMask = new Path2D()
+    videoMask.roundRect(frameBox.left - box.left, headroom + frameBox.top - box.top, frameBox.width, frameBox.height,
+      [frameStyle.borderTopLeftRadius, frameStyle.borderTopRightRadius, frameStyle.borderBottomRightRadius, frameStyle.borderBottomLeftRadius].map(radius))
     dirty = false
   }
   const observer = new ResizeObserver(measure)
@@ -82,6 +96,13 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
         glow.addColorStop(1, `rgba(${color},0)`)
         context.fillStyle = glow
         context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill()
+      }
+      if (videoMask) {
+        context.save()
+        context.globalCompositeOperation = 'destination-out'
+        context.fillStyle = '#000'
+        context.fill(videoMask)
+        context.restore()
       }
     },
     destroy() { observer.disconnect(); video.removeEventListener('loadedmetadata', measure); canvas.remove() },

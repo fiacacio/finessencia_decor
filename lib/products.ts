@@ -6,6 +6,9 @@ export type Product = {
   slug: string
   description: string | null
   price: number
+  categoryId?: string | null
+  essenceIds?: string[]
+  allEssences?: boolean
   category: string | null
   essence: string | null
   imageUrl: string | null
@@ -19,52 +22,30 @@ export type ProductInput = {
   name: string
   description: string
   price: number
-  category: string
-  essence: string
+  categoryId: string | null
+  essenceIds: string[]
+  allEssences: boolean
   detail: string
   active: boolean
   imageUrl: string | null
 }
 
 type ProductRow = {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  price: number | string
-  category: string | null
-  essence: string | null
-  image_url: string | null
-  detail: string | null
-  active: boolean
-  created_at: string
-  updated_at: string
+  id:string; name:string; slug:string; description:string|null; price:number|string; image_url:string|null; detail:string|null;
+  active:boolean; created_at:string; updated_at:string; category_id:string|null; all_essences:boolean;
+  categories?: {id:string;name:string}|null; product_essences?: {essences:{id:string;name:string}|null}[]
 }
-
 export const mapProduct = (row: ProductRow): Product => ({
-  id: row.id,
-  name: row.name,
-  slug: row.slug,
-  description: row.description,
-  price: Number(row.price),
-  category: row.category,
-  essence: row.essence,
-  imageUrl: row.image_url,
-  detail: row.detail,
-  active: row.active,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
+  id:row.id, name:row.name, slug:row.slug, description:row.description, price:Number(row.price),
+  categoryId:row.category_id, essenceIds:(row.product_essences || []).flatMap(link => link.essences ? [link.essences.id] : []),
+  allEssences:row.all_essences, category:row.categories?.name || null,
+  essence:row.all_essences ? 'Todas as essências' : (row.product_essences || []).flatMap(link => link.essences ? [link.essences.name] : []).join(', ') || null,
+  imageUrl:row.image_url, detail:row.detail, active:row.active, createdAt:row.created_at, updatedAt:row.updated_at,
 })
-
 export const productToRow = (product: ProductInput) => ({
-  name: product.name.trim(),
-  description: product.description.trim() || null,
-  price: product.price,
-  category: product.category.trim() || null,
-  essence: product.essence.trim() || null,
-  detail: product.detail.trim() || null,
-  image_url: product.imageUrl,
-  active: product.active,
+  name:product.name.trim(), description:product.description.trim() || null, price:product.price,
+  category_id:product.categoryId || null, all_essences:product.allEssences,
+  detail:product.detail.trim() || null, image_url:product.imageUrl, active:product.active,
 })
 
 export const formatPrice = (price: number) =>

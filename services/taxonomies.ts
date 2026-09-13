@@ -1,44 +1,41 @@
 import { createSupabaseClient } from '@/lib/supabase'
+import { defaultTaxonomyImages, type TaxonomyKind } from '@/lib/taxonomy-images'
 
-export type Taxonomy = {
-  id: string
-  name: string
-  createdAt: string
-  updatedAt: string
+export type Taxonomy = { id: string; name: string; imageUrl: string | null; hoverImageUrl: string | null; createdAt: string; updatedAt: string }
+export type TaxonomyInput = { name: string; imageUrl: string | null; hoverImageUrl: string | null }
+type Row = { id: string; name: string; image_url?: string | null; hover_image_url?: string | null; created_at: string; updated_at: string }
+function mapTaxonomy(kind: TaxonomyKind, row: Row): Taxonomy {
+  const original = defaultTaxonomyImages(kind, row.name)
+  return { id:row.id, name:row.name, imageUrl:row.image_url === undefined ? original?.image || null : row.image_url,
+    hoverImageUrl:row.hover_image_url === undefined ? original?.hoverImage || null : row.hover_image_url,
+    createdAt:row.created_at, updatedAt:row.updated_at }
 }
-
-type Kind = 'categories' | 'essences'
-type ProductColumn = 'category' | 'essence'
-
-const productColumn: Record<Kind, ProductColumn> = { categories: 'category', essences: 'essence' }
-
-export async function getTaxonomies(kind: Kind): Promise<Taxonomy[]> {
-  const { data, error } = await createSupabaseClient().from(kind).select('*').order('name')
+function toRow(input: TaxonomyInput) {
+  if (!input.name.trim()) throw new Error('Informe o nome do cadastro.')
+  return { name:input.name.trim(), image_url:input.imageUrl, hover_image_url:input.hoverImageUrl }
+}
+export async function getTaxonomies(kind: TaxonomyKind): Promise<Taxonomy[]> {
+  const { data, error } = await createSupabaseClient().from(kind).select('*').order('created_at').order('id')
   if (error) throw error
-  return data.map((item) => ({ id: item.id, name: item.name, createdAt: item.created_at, updatedAt: item.updated_at }))
+  return data.map((item) => mapTaxonomy(kind,item))
 }
-
-export async function createTaxonomy(kind: Kind, name: string) {
-  const { data, error } = await createSupabaseClient().from(kind).insert({ name: name.trim() }).select().single()
+export async function createTaxonomy(kind: TaxonomyKind, input: TaxonomyInput) {
+  const { data, error } = await createSupabaseClient().from(kind).insert(toRow(input)).select().single()
   if (error) throw error
-  return { id: data.id, name: data.name, createdAt: data.created_at, updatedAt: data.updated_at } as Taxonomy
+  return mapTaxonomy(kind,data)
 }
-
-export async function updateTaxonomy(kind: Kind, item: Taxonomy, name: string) {
-  const normalized = name.trim()
+export async function updateTaxonomy(kind: TaxonomyKind, item: Taxonomy, input: TaxonomyInput) {
+  const { data, error } = await createSupabaseClient().from(kind).update(toRow(input)).eq('id', item.id).select().single()
+  if (error) throw error
+  return mapTaxonomy(kind,data)
+}
+export async function deleteTaxonomy(kind: TaxonomyKind, item: Taxonomy) {
   const supabase = createSupabaseClient()
-  const { data, error } = await supabase.from(kind).update({ name: normalized }).eq('id', item.id).select().single()
-  if (error) throw error
-  const { error: productError } = await supabase.from('products').update({ [productColumn[kind]]: normalized }).eq(productColumn[kind], item.name)
-  if (productError) throw productError
-  return { id: data.id, name: data.name, createdAt: data.created_at, updatedAt: data.updated_at } as Taxonomy
-}
-
-export async function deleteTaxonomy(kind: Kind, item: Taxonomy) {
-  const supabase = createSupabaseClient()
-  const { count, error: countError } = await supabase.from('products').select('id', { count: 'exact', head: true }).eq(productColumn[kind], item.name)
+  const query = kind === 'categories' ? supabase.from('products').select('id', {count:'exact',head:true}).eq('category_id',item.id)
+    : supabase.from('product_essences').select('product_id', {count:'exact',head:true}).eq('essence_id',item.id)
+  const {count,error:countError} = await query
   if (countError) throw countError
-  if (count) throw new Error(`Não é possível excluir “${item.name}” enquanto ela estiver associada a ${count} produto(s).`)
-  const { error } = await supabase.from(kind).delete().eq('id', item.id)
+  if (count) throw new Error('Não é possível excluir um cadastro associado a produtos.')
+  const {error} = await supabase.from(kind).delete().eq('id',item.id)
   if (error) throw error
 }
