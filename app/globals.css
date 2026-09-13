@@ -9,7 +9,7 @@
 .hero-video-ending { position:absolute; z-index:2; inset:0; display:grid; place-items:center; background:#a75e2b; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .45s ease-out,visibility 0s linear .45s; }
 .hero-image.is-ending .hero-video-ending { opacity:1; visibility:visible; transition:opacity 1.4s ease-in-out; }
 .hero-image .hero-video-ending img { display:block; width:52%; max-width:360px; height:auto; object-fit:contain; opacity:0; transform:scale(.96); transition:opacity .3s ease-out,transform 0s linear .45s; }
-.hero-image.is-ending .hero-video-ending img { opacity:1; transform:scale(1.03); transition:opacity 1.2s ease-in-out 1.5s,transform 4.5s ease-out 1.5s; }
+.hero-image.is-ending .hero-video-ending img { opacity:1; transform:scale(1.15); transition:opacity 1.2s ease-in-out 1.5s,transform 4.5s ease-out 1.5s; }
 @media (prefers-reduced-motion:reduce) { .hero-video-ending,.hero-image .hero-video-ending img,.hero-image.is-ending .hero-video-ending,.hero-image.is-ending .hero-video-ending img { transition:none; }.hero-image .hero-video-ending img { transform:none; } }
 
 .shipping-bar { gap:12px; padding:5px 16px; text-align:center; line-height:1.5; overflow-wrap:anywhere; }

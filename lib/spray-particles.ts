@@ -21,15 +21,18 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
       const value = Math.sin((index + 1) * seed) * 43758.5453
       return value - Math.floor(value)
     }
-    return { delay: random(12.9898) * .24, life: 4 + random(78.233) * 1.5,
+    const flightDuration = 4 + random(78.233) * 1.5
+    return { delay: random(12.9898) * .24, flightDuration, life: flightDuration + 2.5,
       speed: .65 + random(39.425) * .55, spread: random(93.12) - .5,
       lift: .42 + random(63.71) * .55,
       size: .45 + random(15.32) * .65, opacity: (settings.particle_opacity / 100) * (.82 + random(51.9) * .18) }
   })
+  const burstDuration = particles.reduce((duration, particle) => Math.max(duration, particle.delay + particle.life), 0)
   const measure = () => {
     const box = hero.getBoundingClientRect(), media = video.getBoundingClientRect(), shellBox = shell.getBoundingClientRect()
     const headroom = Math.min(140, Math.max(0, box.top - shellBox.top))
-    width = box.width; height = box.height + headroom
+    const footroom = Math.min(300, media.height * .6)
+    width = box.width; height = box.height + headroom + footroom
     mobile = window.matchMedia('(max-width:700px)').matches
     canvas.style.left = `${box.left - shellBox.left}px`
     canvas.style.top = `${box.top - shellBox.top - headroom}px`
@@ -72,24 +75,27 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
   return {
     draw(time: number) {
       if (!context) return
-      const active = !reducedMotion.matches && moments.some((moment) => time >= moment && time < moment + 5.8)
+      const active = !reducedMotion.matches && moments.some((moment) => time >= moment && time < moment + burstDuration)
       if (!active) { if (dirty) context.clearRect(0, 0, width, height); dirty = false; return }
       context.clearRect(0, 0, width, height); dirty = true
       for (const moment of moments) for (const particle of particles) {
         const age = time - moment - particle.delay
         if (age < 0 || age > particle.life) continue
         const progress = age / particle.life
+        // Keep the original launch speed and angle; extend only the falling tail.
+        const descentProgress = age / particle.flightDuration
+        const motionProgress = Math.min(descentProgress, 1)
         // The initial jet slows horizontally while gravity bends it downward.
-        const distance = (1 - (1 - progress) ** 3) * travel * particle.speed
-        const drift = Math.sin(age * 1.8 + particle.spread * 6) * 9 * Math.sin(progress * Math.PI)
+        const distance = (1 - (1 - motionProgress) ** 3) * travel * particle.speed
+        const drift = Math.sin(age * 1.8 + particle.spread * 6) * 9 * Math.sin(motionProgress * Math.PI)
         const x = mobile
-          ? originX + (width * .5 - originX) * progress + particle.spread * width * .65 * Math.sin(progress * Math.PI / 2) + drift
+          ? originX + (width * .5 - originX) * motionProgress + particle.spread * width * .65 * Math.sin(motionProgress * Math.PI / 2) + drift
           : originX + distance + drift
         const y = mobile
-          ? originY + fall * progress ** 1.55 + drift * .5
-          : originY - distance * particle.lift + particle.spread * distance * .3 + fall * progress ** 2 + drift * .6
+          ? originY + fall * descentProgress ** 1.55 + drift * .5
+          : originY - distance * particle.lift + particle.spread * distance * .3 + fall * descentProgress ** 2 + drift * .6
         const radius = particle.size * (1 - progress * .15)
-        const opacity = particle.opacity * Math.min(age / .12, 1) * Math.min((1 - progress) / .3, 1)
+        const opacity = particle.opacity * Math.min(age / .12, 1) * Math.min((1 - progress) / .18, 1) * Math.max(0, Math.min((height - y) / 80, 1))
         const glow = context.createRadialGradient(x, y, 0, x, y, radius)
         glow.addColorStop(0, `rgba(${color},${opacity})`)
         glow.addColorStop(.45, `rgba(${color},${opacity * .8})`)
