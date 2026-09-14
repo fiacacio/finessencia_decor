@@ -10,6 +10,6 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#faf6f0',
     theme_color: '#3a2419',
     lang: 'pt-BR',
-    icons: [{ src: '/Logo Forma Caramelo.png', sizes: '512x512', type: 'image/png', purpose: 'any' }, { src: '/Logo Forma Caramelo.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }],
+    icons: [{ src: '/icon.ico', sizes: 'any', type: 'image/x-icon', purpose: 'any' }],
   }
 }
