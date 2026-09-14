@@ -17,7 +17,7 @@ export function SectionColorsPanel() {
   return <form className="admin-section-editor" onSubmit={save}>
     {error && <p role="alert">{error}</p>}{!ready && !error && <p role="status">Carregando seções...</p>}
     <fieldset className="admin-section-list" disabled={!ready || saving}>{colorSections.map(section => {
-      const id = section.id, expanded = open === id, fields = sectionFields[id] || [], config = content[id] || {}
+      const id = section.id, expanded = open === id, fields = (sectionFields[id] || []).filter(field => !(id === 'hero' && field.key === 'title')), config = content[id] || {}
       return <article className={`admin-section-item${expanded ? ' is-open' : ''}`} key={id}>
         <button className="admin-section-trigger" type="button" onClick={() => setOpen(expanded ? null : id)} aria-expanded={expanded}><span><strong>{section.name}</strong><small>{colors[id] ? projectPalette.find(color => color.value === colors[id])?.name : 'Visual original'}</small></span><ChevronDown size={18} /></button>
         {expanded && <div className="admin-section-inline">

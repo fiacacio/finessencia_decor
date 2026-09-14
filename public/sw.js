@@ -1,4 +1,4 @@
-const CACHE = 'finessencia-v3'
+const CACHE = 'finessencia-v4'
 const SHELL = ['/manifest.webmanifest', '/Icone2.ico']
 
 self.addEventListener('install', (event) => {
@@ -14,12 +14,12 @@ self.addEventListener('fetch', (event) => {
     return
   }
   if (!['style', 'script', 'image', 'font'].includes(request.destination)) return
-  event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+  event.respondWith(fetch(request).then((response) => {
     // Range/media responses (206) are not valid Cache API entries.
     if (response.status === 200 && response.type === 'basic') {
       const copy = response.clone()
       void caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {})
     }
     return response
-  })))
+  }).catch(() => caches.match(request)))
 })
