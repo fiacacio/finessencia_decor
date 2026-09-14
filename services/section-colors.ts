@@ -1,5 +1,16 @@
 import { createSupabaseClient } from '@/lib/supabase'
 import { normalizeSectionColors, type SectionColors } from '@/lib/section-colors'
+import { normalizeSectionContent, type SectionContent } from '@/lib/section-content'
+
+export async function getSectionSettings(): Promise<{ colors: SectionColors; content: SectionContent; editable: boolean }> {
+  const { data, error } = await createSupabaseClient().from('section_color_settings').select('*').eq('id', 1).single()
+  if (error) throw new Error('Não foi possível carregar as seções.')
+  return { colors: normalizeSectionColors(data.colors), content: normalizeSectionContent(data.content), editable: data.content !== undefined }
+}
+export async function saveSectionSettings(colors: SectionColors, content: SectionContent) {
+  const { error } = await createSupabaseClient().from('section_color_settings').update({ colors: normalizeSectionColors(colors), content: normalizeSectionContent(content) }).eq('id', 1).select('id').single()
+  if (error) throw new Error('Não foi possível salvar. Execute o SQL de edição das seções no Supabase.')
+}
 
 export async function getSectionColors(): Promise<SectionColors> {
   const { data, error } = await createSupabaseClient().from('section_color_settings').select('colors').eq('id', 1).single()

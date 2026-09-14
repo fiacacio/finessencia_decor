@@ -12,10 +12,16 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
   shell.appendChild(canvas)
   const context = canvas.getContext('2d')
   const color = [1, 3, 5].map((offset) => parseInt(settings.particle_color.slice(offset, offset + 2), 16)).join(',')
+  const sprite = document.createElement('canvas')
+  sprite.width = sprite.height = 32
+  const spriteContext = sprite.getContext('2d')!
+  const glow = spriteContext.createRadialGradient(16, 16, 0, 16, 16, 16)
+  glow.addColorStop(0, `rgba(${color},1)`); glow.addColorStop(.45, `rgba(${color},.8)`); glow.addColorStop(1, `rgba(${color},0)`)
+  spriteContext.fillStyle = glow; spriteContext.fillRect(0, 0, 32, 32)
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   let width = 0, height = 0, originX = 0, originY = 0, travel = 0, fall = 0, dirty = false
   let mobile = false
-  let videoMask: Path2D | null = null
+  let videoMask: Path2D | null = null, lastTime = -1
   const particles = Array.from({ length: settings.particle_count }, (_, index) => {
     const random = (seed: number) => {
       const value = Math.sin((index + 1) * seed) * 43758.5453
@@ -37,7 +43,7 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
     canvas.style.left = `${box.left - shellBox.left}px`
     canvas.style.top = `${box.top - shellBox.top - headroom}px`
     canvas.style.width = `${width}px`; canvas.style.height = `${height}px`
-    const ratio = Math.min(window.devicePixelRatio || 1, 2)
+    const ratio = Math.min(window.devicePixelRatio || 1, 1.5)
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio)
     context?.setTransform(ratio, 0, 0, ratio, 0, 0)
     const sourceWidth = video.videoWidth || 1080, sourceHeight = video.videoHeight || 1214
@@ -75,6 +81,8 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
   return {
     draw(time: number) {
       if (!context) return
+      if (time >= lastTime && time - lastTime < 1 / 32) return
+      lastTime = time
       const active = !reducedMotion.matches && moments.some((moment) => time >= moment && time < moment + burstDuration)
       if (!active) { if (dirty) context.clearRect(0, 0, width, height); dirty = false; return }
       context.clearRect(0, 0, width, height); dirty = true
@@ -96,13 +104,11 @@ export function createSprayParticles(video: HTMLVideoElement, moments: number[],
           : originY - distance * particle.lift + particle.spread * distance * .3 + fall * descentProgress ** 2 + drift * .6
         const radius = particle.size * (1 - progress * .15)
         const opacity = particle.opacity * Math.min(age / .12, 1) * Math.min((1 - progress) / .18, 1) * Math.max(0, Math.min((height - y) / 80, 1))
-        const glow = context.createRadialGradient(x, y, 0, x, y, radius)
-        glow.addColorStop(0, `rgba(${color},${opacity})`)
-        glow.addColorStop(.45, `rgba(${color},${opacity * .8})`)
-        glow.addColorStop(1, `rgba(${color},0)`)
-        context.fillStyle = glow
-        context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill()
+        if (opacity <= 0 || x + radius < 0 || x - radius > width || y + radius < 0 || y - radius > height) continue
+        context.globalAlpha = opacity
+        context.drawImage(sprite, x - radius, y - radius, radius * 2, radius * 2)
       }
+      context.globalAlpha = 1
       if (videoMask) {
         context.save()
         context.globalCompositeOperation = 'destination-out'

@@ -51,6 +51,8 @@ export const productToRow = (product: ProductInput) => ({
 export const formatPrice = (price: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price)
 
+export const essenceLabel = (product: Product) => product.essence || (product.allEssences ? 'Todas as essências' : 'Sem essência')
+
 export const fallbackCatalogProducts: Product[] = [
   { id: 'vela-aromatica', name: 'Vela Aromática', slug: 'vela-aromatica', detail: '120 g', description: 'Aroma acolhedor para momentos de pausa.', price: 39.9, category: 'Velas', essence: null, imageUrl: '/essencias_clique/Velas.jfif', active: true, createdAt: '', updatedAt: '' },
   { id: 'home-spray', name: 'Home Spray', slug: 'home-spray', detail: '250 ml', description: 'Perfuma seu espaço com leveza e frescor.', price: 49.9, category: 'Home Spray', essence: null, imageUrl: '/essencias_clique/Home Spray.jfif', active: true, createdAt: '', updatedAt: '' },

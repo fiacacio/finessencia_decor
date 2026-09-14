@@ -47,8 +47,10 @@ export function EffectsController({ spraySettings = defaultSpraySettings }: { sp
     const spray = spraySettings.spray_enabled ? createSprayParticles(video, moments, spraySettings) : null
     const videoContainer = video.parentElement
     let fired = [false, false], previous = 0, frame = 0
+    let visible = true, running = false, resumeVideo = false
     const fire = () => { title.classList.remove('is-spraying'); void title.offsetWidth; title.classList.add('is-spraying') }
     const watch = () => {
+      if (!running) return
       const time = video.currentTime
       spray?.draw(time)
       // Finish the 1.4s fade before the original ending begins around 15.5s.
@@ -58,9 +60,27 @@ export function EffectsController({ spraySettings = defaultSpraySettings }: { sp
       previous = time
       frame = requestAnimationFrame(watch)
     }
-    frame = requestAnimationFrame(watch)
-    return () => { cancelAnimationFrame(frame); spray?.destroy(); videoContainer?.classList.remove('is-ending') }
+    const sync = () => {
+      const active = visible && !document.hidden && !document.documentElement.classList.contains('customer-modal-open')
+      if (!active) { running = false; cancelAnimationFrame(frame); if (!video.paused) { resumeVideo = true; video.pause() } }
+      else { if (resumeVideo) { resumeVideo = false; void video.play().catch(() => {}) }; if (!running && !video.paused) { running = true; frame = requestAnimationFrame(watch) } }
+    }
+    const onPause = () => { running = false; cancelAnimationFrame(frame) }
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync() }, { rootMargin: '180px' })
+    observer.observe(video.closest('.hero') || video)
+    document.addEventListener('visibilitychange', sync)
+    video.addEventListener('play', sync)
+    video.addEventListener('pause', onPause)
+    sync()
+    return () => { running = false; cancelAnimationFrame(frame); observer.disconnect(); document.removeEventListener('visibilitychange', sync); video.removeEventListener('play', sync); video.removeEventListener('pause', onPause); spray?.destroy(); videoContainer?.classList.remove('is-ending') }
   }, [spraySettings])
+
+  useEffect(() => {
+    const sections = document.querySelectorAll<HTMLElement>('.hero,.arrivals,.showcase,.catalog,.about,.footer-brand-echo')
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => entry.target.classList.toggle('motion-offscreen', !entry.isIntersecting)), { rootMargin: '120px' })
+    sections.forEach(section => observer.observe(section))
+    return () => { observer.disconnect(); sections.forEach(section => section.classList.remove('motion-offscreen')) }
+  }, [])
 
   return null
 }
