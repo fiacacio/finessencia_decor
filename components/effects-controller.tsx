@@ -48,16 +48,20 @@ export function EffectsController({ spraySettings = defaultSpraySettings }: { sp
     const videoContainer = video.parentElement
     let fired = [false, false], previous = 0, frame = 0
     let visible = true, running = false, resumeVideo = false
-    const fire = () => { title.classList.remove('is-spraying'); void title.offsetWidth; title.classList.add('is-spraying') }
+    const fire = () => { title.classList.remove('is-spraying'); void title.offsetWidth; title.classList.add('is-spraying'); window.setTimeout(() => title.classList.remove('is-spraying'), 3300) }
+    const onTimeUpdate = () => {
+      const time = video.currentTime
+      if (time < previous) fired = [false, false]
+      moments.forEach((moment, index) => { if (!fired[index] && time >= moment) { fired[index] = true; fire() } })
+      previous = time
+    }
     const watch = () => {
       if (!running) return
       const time = video.currentTime
       spray?.draw(time)
       // Finish the 1.4s fade before the original ending begins around 15.5s.
       videoContainer?.classList.toggle('is-ending', time >= 14)
-      if (time < previous) fired = [false, false]
-      moments.forEach((moment, index) => { if (!fired[index] && time >= moment) { fired[index] = true; fire() } })
-      previous = time
+      onTimeUpdate()
       frame = requestAnimationFrame(watch)
     }
     const sync = () => {
@@ -71,8 +75,9 @@ export function EffectsController({ spraySettings = defaultSpraySettings }: { sp
     document.addEventListener('visibilitychange', sync)
     video.addEventListener('play', sync)
     video.addEventListener('pause', onPause)
+    video.addEventListener('timeupdate', onTimeUpdate)
     sync()
-    return () => { running = false; cancelAnimationFrame(frame); observer.disconnect(); document.removeEventListener('visibilitychange', sync); video.removeEventListener('play', sync); video.removeEventListener('pause', onPause); spray?.destroy(); videoContainer?.classList.remove('is-ending') }
+    return () => { running = false; cancelAnimationFrame(frame); observer.disconnect(); document.removeEventListener('visibilitychange', sync); video.removeEventListener('play', sync); video.removeEventListener('pause', onPause); video.removeEventListener('timeupdate', onTimeUpdate); spray?.destroy(); videoContainer?.classList.remove('is-ending') }
   }, [spraySettings])
 
   useEffect(() => {

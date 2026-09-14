@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   title: 'Finessência | Decor aromático',
   description: 'Essências que transformam ambientes, despertam memórias e acompanham momentos especiais.',
   icons: {
-    icon: '/icon.ico',
-    apple: '/icon.ico',
+    icon: '/Logo PNG Caramelo.png',
+    apple: '/Icone2.ico',
   },
   manifest: '/manifest.webmanifest',
 }
